@@ -1,0 +1,177 @@
+import os
+
+class Patient:
+    def __init__(self, patient_id, name, age, gender, disease):
+        # check that patient id starts with P
+        if not str(patient_id).startswith('P'):
+            raise ValueError("Patient ID must start with 'P' (e.g., P001)")
+        self.patient_id = patient_id
+        self.name = name
+        try:
+            # make sure age is a number
+            self.age = int(age)
+        except ValueError:
+            raise ValueError("Age must be a valid number")
+        self.gender = gender
+        self.disease = disease
+
+    def __str__(self):
+        # return patient data in text format for file saving
+        return f"{self.patient_id}|{self.name}|{self.age}|{self.gender}|{self.disease}"
+
+class Doctor:
+    def __init__(self, doctor_id, name, age, gender, specialty):
+        # check that doctor id starts with D
+        if not str(doctor_id).startswith('D'):
+            raise ValueError("Doctor ID must start with 'D' (e.g., D001)")
+        self.doctor_id = doctor_id
+        self.name = name
+        self.age = age
+        self.gender = gender
+        self.specialty = specialty
+        # indicates if doctor is available or not
+        self.availability = True
+
+    def __str__(self):
+        return f"{self.doctor_id}|{self.name}|{self.age}|{self.gender}|{self.specialty}"
+
+class Appointment:
+    def __init__(self, appointment_id, patient_id, doctor_id, appointment_date):
+        self.appointment_id = appointment_id
+        self.patient_id = patient_id
+        self.doctor_id = doctor_id
+        self.appointment_date = appointment_date
+
+    def __str__(self):
+        # store relation between patient and doctor with date
+        return f"{self.appointment_id}|{self.patient_id}|{self.doctor_id}|{self.appointment_date}"
+
+class HospitalSystem:
+    def __init__(self):
+        # store all patients, doctors and appointments
+        self.patients = {}
+        self.doctors = {}
+        self.appointments = []
+        # load saved data when program starts
+        self.load_data()
+
+    def load_data(self):
+        try:
+            # read patients from file if it exists
+            if os.path.exists('patients.txt'):
+                with open('patients.txt', 'r') as f:
+                    for line in f:
+                        data = line.strip().split('|')
+                        if len(data) >= 5:
+                            p = Patient(data[0], data[1], data[2], data[3], data[4])
+                            self.patients[p.patient_id] = p
+
+            # read doctors from file
+            if os.path.exists('doctors.txt'):
+                with open('doctors.txt', 'r') as f:
+                    for line in f:
+                        data = line.strip().split('|')
+                        if len(data) >= 5:
+                            d = Doctor(data[0], data[1], data[2], data[3], data[4])
+                            self.doctors[d.doctor_id] = d
+
+            # read appointments from file
+            if os.path.exists('appointments.txt'):
+                with open('appointments.txt', 'r') as f:
+                    for line in f:
+                        data = line.strip().split('|')
+                        if len(data) >= 4:
+                            a = Appointment(data[0], data[1], data[2], data[3])
+                            self.appointments.append(a)
+        except Exception as e:
+            print(f"Error loading data: {e}")
+
+    def save_data(self):
+        # save all data to files before closing program
+        try:
+            with open('patients.txt', 'w') as f:
+                for p in self.patients.values():
+                    f.write(str(p) + '\n')
+            with open('doctors.txt', 'w') as f:
+                for d in self.doctors.values():
+                    f.write(str(d) + '\n')
+            with open('appointments.txt', 'w') as f:
+                for a in self.appointments:
+                    f.write(str(a) + '\n')
+            print("Data saved successfully.")
+        except IOError as e:
+            print(f"File writing error: {e}")
+
+    def add_patient(self):
+        try:
+            p_id = input("Enter Patient ID (e.g., P004): ")
+            # check if patient id already exists
+            if p_id in self.patients:
+                raise ValueError("Patient ID already exists!")
+            
+            name = input("Enter Name: ")
+            age = input("Enter Age: ")
+            gender = input("Enter Gender: ")
+            disease = input("Enter Disease: ")
+            
+            new_p = Patient(p_id, name, age, gender, disease)
+            self.patients[p_id] = new_p
+            print("Patient added.")
+        except ValueError as e:
+            print(f"Error: {e}")
+
+    def add_appointment(self):
+        try:
+            a_id = input("Enter Appointment ID (e.g., A003): ")
+            p_id = input("Enter Patient ID: ")
+            d_id = input("Enter Doctor ID: ")
+            date = input("Enter Date (YYYY-MM-DD): ")
+
+            # make sure patient and doctor exist before booking
+            if p_id not in self.patients:
+                raise ValueError("Patient not found! Please add patient first.")
+            if d_id not in self.doctors:
+                raise ValueError("Doctor not found! Please add doctor first.")
+
+            new_app = Appointment(a_id, p_id, d_id, date)
+            self.appointments.append(new_app)
+            print("Appointment booked successfully.")
+        except ValueError as e:
+            print(f"Error: {e}")
+
+    def display_menu(self):
+        # simple menu for user interaction
+        while True:
+            print("\n--- 🏥 Hospital Management System ---")
+            print("1. View Patients")
+            print("2. View Doctors")
+            print("3. View Appointments")
+            print("4. Add New Patient")
+            print("5. Book New Appointment")
+            print("6. Save and Exit")
+            
+            choice = input("Select an option: ")
+            
+            if choice == '1':
+                for p in self.patients.values():
+                    print(p)
+            elif choice == '2':
+                for d in self.doctors.values():
+                    print(d)
+            elif choice == '3':
+                for a in self.appointments:
+                    print(a)
+            elif choice == '4':
+                self.add_patient()
+            elif choice == '5':
+                self.add_appointment()
+            elif choice == '6':
+                self.save_data()
+                print("Exiting...")
+                break
+            else:
+                print("Invalid choice, try again.")
+
+if __name__ == "__main__":
+    system = HospitalSystem()
+    system.display_menu()
